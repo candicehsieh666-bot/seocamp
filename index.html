@@ -242,14 +242,8 @@
             ]
         };
 
-        // 【每日小語】沒有公告時隨機顯示一句
-        const QUOTES = [
-            "不用完美，先完成。",
-            "排名會變，累積不會。",
-            "今天寫的那一篇，是三個月後的流量。",
-            "寫不出來的時候，就先寫爛的那一版。",
-            "同學的回饋比你想的還有用，記得去看。"
-        ];
+        // 【首頁標語】沒有公告的時候，首頁問候語下面顯示這一句
+        const TAGLINE = "不用完美，先完成，一起加油！";
 
         /* ============================================================
            ▲▲▲ 以上是設定區，下面是程式本體，不用動 ▲▲▲
@@ -379,7 +373,6 @@
             const [uid, setUid] = useState(null);   // 這台裝置的 Firebase 匿名身分，用來判斷「這筆是不是我寫的」
             const [roster, setRoster] = useState(null);   // null = 名單還沒載入回來
             const [peerDate, setPeerDate] = useState(null);
-            const quote = useMemo(() => QUOTES[Math.floor(Math.random() * QUOTES.length)], []);
 
             useEffect(() => {
                 const t = setInterval(() => setNow(new Date()), 30000);
@@ -755,7 +748,7 @@
                                             <h1 className="text-[27px] md:text-[32px] font-bold leading-snug">
                                                 {greeting()}，{identity.name}！
                                             </h1>
-                                            <p className="text-[15px] text-ink-soft mt-2">{announcement || quote}</p>
+                                            <p className="text-[15px] text-ink-soft mt-2">{announcement || TAGLINE}</p>
                                         </div>
 
                                         {/* 倒數 */}
