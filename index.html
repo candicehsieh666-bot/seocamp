@@ -196,11 +196,12 @@
            ▼▼▼ 這一區是你之後要自己改的地方，改完存檔就生效 ▼▼▼
            ============================================================ */
 
-        // 【學員名單】填了名字 → 登入是下拉選單；清空成 [] → 讓學員自己打名字
-        const STUDENTS = [
-            "國英", "Irene", "Candice", "Olive",
-            "Issa", "賴憲", "惠雯", "Alice"
-        ];
+        /* 【學員名單】不在這個檔案裡，存在 Firebase，所以公開的程式碼看不到名字。
+           要加人 / 改名：Firebase Console → Firestore → 這個路徑的 names 欄位
+             artifacts / seo-camp-portal-v1 / public / data / config / roster
+           改完學員重新整理就生效，不用重新上傳檔案。
+           名單如果是空的，登入畫面會自動變成讓學員自己打名字。 */
+        let ROSTER = [];   // 由 Firebase 載入後填進來
 
         // 【共學營週次】date = 作業截止日；feedbackDue = 這週作業的回饋期限
         const CAMP_WEEKS = [
@@ -316,7 +317,7 @@
 
         // 學員代表色：照名單順序給，順序固定不會跳來跳去
         const colorOf = (name) => {
-            const i = STUDENTS.indexOf(name);
+            const i = ROSTER.indexOf(name);
             if (i >= 0) return POP[i % POP.length];
             let h = 0;
             for (let k = 0; k < (name || '').length; k++) h = (h * 31 + name.charCodeAt(k)) | 0;
@@ -376,6 +377,7 @@
             const [confetti, setConfetti] = useState([]);
             const [now, setNow] = useState(new Date());
             const [uid, setUid] = useState(null);   // 這台裝置的 Firebase 匿名身分，用來判斷「這筆是不是我寫的」
+            const [roster, setRoster] = useState(null);   // null = 名單還沒載入回來
             const [peerDate, setPeerDate] = useState(null);
             const quote = useMemo(() => QUOTES[Math.floor(Math.random() * QUOTES.length)], []);
 
@@ -425,9 +427,12 @@
                                 env.onSnapshot(env.doc(env.db, 'artifacts', env.appId, 'public', 'announcement'), d => {
                                     if (d.exists()) setAnnouncement(d.data().text);
                                 });
+                                env.onSnapshot(env.doc(env.db, 'artifacts', env.appId, 'public', 'data', 'config', 'roster'), d => {
+                                    const names = (d.exists() && Array.isArray(d.data().names)) ? d.data().names : [];
+                                    ROSTER = names;
+                                    setRoster(names);
+                                });
                                 setReady(true);
-                                const ov = document.getElementById('loading-overlay');
-                                if (ov) ov.style.display = 'none';
                             }
                         });
                         clearInterval(check);
@@ -436,6 +441,14 @@
             }, []);
 
             /* --- 計算 --------------------------------------------- */
+
+            // 身分和名單都到齊才收掉載入畫面，避免登入畫面閃一下空的下拉選單
+            useEffect(() => {
+                if (ready && roster !== null) {
+                    const ov = document.getElementById('loading-overlay');
+                    if (ov) ov.style.display = 'none';
+                }
+            }, [ready, roster]);
 
             const fmtDate = (createdAt) => {
                 if (!createdAt) return "剛剛";
@@ -462,8 +475,9 @@
 
             const shownPeerDate = peerDate || (activeFeedbackWeek || activeWeek).date;
 
-            const rosterNames = STUDENTS.length > 0
-                ? STUDENTS
+            // roster 剛載入前是 null，這裡在早期 return 之前就會執行，要防呆
+            const rosterNames = (roster && roster.length > 0)
+                ? roster
                 : Array.from(new Set(assignments.map(a => a.studentName).filter(Boolean))).sort();
 
             // 規則是「回饋所有同學」，所以那一週有交作業的都算，遲交的也要回饋
@@ -601,7 +615,7 @@
                 localStorage.setItem('portal_identity', JSON.stringify({ name }));
             };
 
-            if (!ready) return null;
+            if (!ready || roster === null) return null;
 
             /* --- 登入 --------------------------------------------- */
 
@@ -617,11 +631,11 @@
 
                             <div className="sticker p-7">
                                 <label className="block text-[15px] font-bold text-ink-soft mb-3">你是哪一位呀？</label>
-                                {STUDENTS.length > 0 ? (
+                                {roster.length > 0 ? (
                                     <select id="name-sel" defaultValue=""
                                         className="w-full sticker-sm px-4 py-3 text-[17px] outline-none appearance-none bg-surface">
                                         <option value="" disabled>點這裡選名字</option>
-                                        {STUDENTS.map(n => <option key={n} value={n}>{n}</option>)}
+                                        {roster.map(n => <option key={n} value={n}>{n}</option>)}
                                     </select>
                                 ) : (
                                     <input value={nameInput} onChange={e => setNameInput(e.target.value)}
@@ -630,7 +644,7 @@
                                         placeholder="輸入你的名字" />
                                 )}
                                 <button
-                                    onClick={() => doLogin(STUDENTS.length > 0 ? document.getElementById('name-sel').value : nameInput)}
+                                    onClick={() => doLogin(roster.length > 0 ? document.getElementById('name-sel').value : nameInput)}
                                     className="sticker-sm pressable w-full mt-5 py-3.5 text-[17px] bg-accent text-white">
                                     出發囉 →
                                 </button>
