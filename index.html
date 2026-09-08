@@ -1,0 +1,1400 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SEO/社群實戰共學營</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <script>
+        /* ============================================================
+           【配色主題】想換顏色改這一行：'brown' 暖棕奶油 或 'purple' 紫色
+           ============================================================ */
+        const THEME_NAME = 'blue';
+
+        const THEMES = {
+            blue: {
+                paper: '#F3F8FD', surface: '#FFFFFF', speck: 'rgba(30,58,95,.05)',
+                ink:    { DEFAULT: '#1E3A5F', soft: '#42618A', muted: '#7A93B0', faint: '#AABED4' },
+                accent: { DEFAULT: '#3D8BCD', deep: '#2A6BA5', soft: '#E2EFFA', line: '#B9D8F2' },
+                highlight: '#C6E3F8'
+            },
+            brown: {
+                paper: '#FDF5E9', surface: '#FFFDF9', speck: 'rgba(93,62,35,.055)',
+                ink:    { DEFAULT: '#3D2A1A', soft: '#6B5340', muted: '#93806D', faint: '#BCAA97' },
+                accent: { DEFAULT: '#B4703A', deep: '#8A5124', soft: '#FBE7D0', line: '#E8C9A6' },
+                highlight: '#FBD9A5'
+            },
+            purple: {
+                paper: '#F7F1FD', surface: '#FFFDFF', speck: 'rgba(60,35,95,.055)',
+                ink:    { DEFAULT: '#33224D', soft: '#584472', muted: '#8A79A3', faint: '#B7AACB' },
+                accent: { DEFAULT: '#8B4FD1', deep: '#66339F', soft: '#F0E4FD', line: '#DCC6F5' },
+                highlight: '#E6CDFB'
+            }
+        };
+
+        // 狀態色固定不隨主題變，而且一定會配文字，不靠顏色單獨表意
+        const STATUS = { ok: '#0ca30c', warn: '#fab219', bad: '#d03b3b' };
+
+        // 學員代表色（貼紙、頭像用）。順序固定，名字一定會跟在旁邊
+        const POP = ['#3D8BCD', '#4FB0A5', '#7B8FD4', '#5BA9E0', '#6FA96F', '#9B7BC4', '#4A9DBF', '#E4913F'];
+
+        const T = THEMES[THEME_NAME] || THEMES.brown;
+
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        paper: T.paper, surface: T.surface, ink: T.ink, accent: T.accent,
+                        ok: STATUS.ok, warn: STATUS.warn, bad: STATUS.bad, highlight: T.highlight
+                    }
+                }
+            }
+        };
+
+        (function () {
+            const r = document.documentElement.style;
+            r.setProperty('--paper', T.paper);
+            r.setProperty('--surface', T.surface);
+            r.setProperty('--speck', T.speck);
+            r.setProperty('--ink', T.ink.DEFAULT);
+            r.setProperty('--ink-muted', T.ink.muted);
+            r.setProperty('--accent', T.accent.DEFAULT);
+            r.setProperty('--accent-soft', T.accent.soft);
+            r.setProperty('--highlight', T.highlight);
+        })();
+    </script>
+
+    <style>
+        /* 正黑體。Windows 用微軟正黑體、Mac 用蘋方（Mac 上的對應字體），
+           都不用下載，開啟速度快。 */
+        :root {
+            --font-body: "Microsoft JhengHei", "微軟正黑體", -apple-system, BlinkMacSystemFont,
+                         "PingFang TC", "PingFang SC", "Noto Sans TC", "Helvetica Neue", Arial, sans-serif;
+            --font-fun: var(--font-body);
+        }
+
+        body {
+            font-family: var(--font-body);
+            background-color: var(--paper);
+            background-image: radial-gradient(var(--speck) 1.2px, transparent 1.2px);
+            background-size: 20px 20px;
+            color: var(--ink);
+            margin: 0;
+            font-size: 16px;
+            line-height: 1.7;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* 數字與英文用圓潤字型，中文自動落回系統字 */
+        /* 數字強調：同一套正黑體，只是加粗 */
+        .fun { font-family: var(--font-fun); font-weight: 700; letter-spacing: 0; }
+        .tnum { font-variant-numeric: tabular-nums; }
+
+        /* 貼紙：粗邊框 + 不規則圓角 + 硬邊陰影 */
+        .sticker {
+            background: var(--surface);
+            border: 2px solid var(--ink);
+            border-radius: 16px;
+            box-shadow: 3px 3px 0 var(--ink);
+        }
+        .sticker-sm {
+            background: var(--surface);
+            border: 2px solid var(--ink);
+            border-radius: 12px;
+            box-shadow: 2px 2px 0 var(--ink);
+        }
+        .pressable { transition: transform .12s ease, box-shadow .12s ease; }
+        .pressable:hover { transform: translate(-1px, -1px); box-shadow: 5px 5px 0 var(--ink); }
+        .pressable:active { transform: translate(2px, 2px); box-shadow: 0 0 0 var(--ink); }
+
+        /* 螢光筆畫線的標題 */
+        .marker {
+            background-image: linear-gradient(transparent 58%, var(--highlight) 58%, var(--highlight) 92%, transparent 92%);
+            padding: 0 .15em;
+        }
+
+        /* 手寫感的虛線分隔 */
+        .dashed { border-top: 2.5px dashed var(--ink); opacity: .18; }
+
+        /* 進度條：粗、圓頭、有外框 */
+        .meter {
+            height: 14px; background: var(--paper);
+            border: 2.5px solid var(--ink); border-radius: 999px;
+            overflow: hidden; padding: 0;
+        }
+        .meter > i {
+            display: block; height: 100%; border-radius: 999px;
+            background: var(--accent);
+            transition: width .7s cubic-bezier(.34,1.4,.5,1);
+        }
+
+        #loading-overlay {
+            position: fixed; inset: 0; background: var(--paper);
+            display: flex; align-items: center; justify-content: center; z-index: 9999;
+            font-family: var(--font-body); font-size: 20px; color: var(--ink);
+        }
+
+        /* 彩帶 */
+        .confetti-layer { position: fixed; inset: 0; pointer-events: none; z-index: 70; overflow: hidden; }
+        .confetti-piece { position: absolute; top: -24px; animation-name: confetti-fall; animation-timing-function: linear; animation-fill-mode: forwards; }
+        @keyframes confetti-fall {
+            0%   { transform: translateY(-12vh) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(108vh) rotate(760deg); opacity: .95; }
+        }
+
+        .pop-in { animation: pop-in .45s cubic-bezier(.34,1.56,.64,1) both; }
+        @keyframes pop-in { 0% { opacity: 0; transform: scale(.94) translateY(8px); } 100% { opacity: 1; transform: none; } }
+
+        .wiggle { animation: wiggle .5s ease-in-out; }
+        @keyframes wiggle { 0%,100%{transform:rotate(0)} 25%{transform:rotate(-3deg)} 75%{transform:rotate(3deg)} }
+
+        input, textarea, select { font-family: inherit; }
+        input::placeholder { color: var(--ink-muted); opacity: .7; }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body>
+    <div id="loading-overlay">準備中…</div>
+    <div id="root"></div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, doc, onSnapshot, addDoc, updateDoc, deleteDoc, serverTimestamp, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBlo6fIFqmEMyK3YTGBRg1S9Lw3OcZdczU",
+            authDomain: "test-fee8d.firebaseapp.com",
+            projectId: "test-fee8d",
+            storageBucket: "test-fee8d.firebasestorage.app",
+            messagingSenderId: "415299571304",
+            appId: "1:415299571304:web:07dff250c930d4f99035dd",
+            measurementId: "G-TXQ7NZ8LPT"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        window.fb = {
+            auth: getAuth(app),
+            db: getFirestore(app),
+            collection, doc, onSnapshot, addDoc, updateDoc, deleteDoc, serverTimestamp, arrayUnion, arrayRemove,
+            signInAnonymously, onAuthStateChanged,
+            // 這一期的資料存放區。跟上一期完全分開。
+            // 之後要再開新一期，把 v1 改成 v2 就好，資料會重新開始。
+            appId: 'seo-camp-portal-v1'
+        };
+    </script>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo, useRef } = React;
+
+        /* ============================================================
+           ▼▼▼ 這一區是你之後要自己改的地方，改完存檔就生效 ▼▼▼
+           ============================================================ */
+
+        // 【學員名單】填了名字 → 登入是下拉選單；清空成 [] → 讓學員自己打名字
+        const STUDENTS = [
+            "國英", "Irene", "Candice", "Olive",
+            "Issa", "賴憲", "惠雯", "Alice"
+        ];
+
+        // 【共學營週次】date = 作業截止日；feedbackDue = 這週作業的回饋期限
+        const CAMP_WEEKS = [
+            { date: "9/13",  feedbackDue: "9/20"  },
+            { date: "9/20",  feedbackDue: "9/27"  },
+            { date: "9/27",  feedbackDue: "10/4"  },
+            { date: "10/4",  feedbackDue: "10/11" },
+            { date: "10/11", feedbackDue: "10/18" },
+            { date: "10/18", feedbackDue: "10/25" },
+            { date: "10/25", feedbackDue: "11/1"  },
+            // 最後一週的回饋期限往後抓一週（營期 11/2 結束，但回饋要留時間）
+            { date: "11/1",  feedbackDue: "11/8"  }
+        ];
+
+        const CAMP_YEAR = 2026;
+        const DEADLINE_HOUR = 23;
+        const DEADLINE_MINUTE = 59;
+
+        const CAMP_TITLE = "SEO/社群實戰共學營";
+        const CAMP_PERIOD = "9/7 – 11/2";
+
+        // 【保證金規則】
+        const DEPOSIT_TOTAL = 3000;
+        const PENALTY_WORK = 1000;
+        const PENALTY_FEEDBACK = 300;
+        const KICK_THRESHOLD = 3;
+
+        const RULES = {
+            output: "每週日前完成 1 篇內容（SEO / 社群任一都可以，Threads 文不算）＋ 交作業 ＋ 互相回饋",
+            submit: "共 8 次，每週日 23:59 截止",
+            feedback: "下一週要回饋同學「上一週」的作業內容。例：9/20 前要回覆完 9/13 那一週所有同學的內容",
+            penalties: [
+                { type: "ok",   text: "8 週都有完成 → 保證金 $" + DEPOSIT_TOTAL + " 全額退回" },
+                { type: "bad",  text: "一次沒上傳 SEO / 社群作品 → 扣 $" + PENALTY_WORK },
+                { type: "bad",  text: "沒有完成同學回饋 → 一次扣 $" + PENALTY_FEEDBACK },
+                { type: "kick", text: "沒上傳作品超過 " + KICK_THRESHOLD + " 次 → 保證金不退回 ＋ 退出群組" },
+                { type: "kick", text: "沒完成回饋超過 " + KICK_THRESHOLD + " 次 → 一樣退出群組" }
+            ]
+        };
+
+        // 【每日小語】沒有公告時隨機顯示一句
+        const QUOTES = [
+            "不用完美，先完成。",
+            "排名會變，累積不會。",
+            "今天寫的那一篇，是三個月後的流量。",
+            "寫不出來的時候，就先寫爛的那一版。",
+            "同學的回饋比你想的還有用，記得去看。"
+        ];
+
+        /* ============================================================
+           ▲▲▲ 以上是設定區，下面是程式本體，不用動 ▲▲▲
+           ============================================================ */
+
+        /* 單色線條 icon。全部用 currentColor，顏色跟著文字走。 */
+        const ICONS = {
+            home:    "M3 10.5 12 3.5l9 7M5.5 9.2V20h13V9.2",
+            upload:  "M12 15.5V4.6M7.8 8.8 12 4.6l4.2 4.2M4 20h16",
+            chat:    "M20 11.5a8 8 0 0 1-11.6 7.1L4 20l1.4-4.4A8 8 0 1 1 20 11.5z",
+            mail:    "M3.5 6.5h17v11h-17zM3.6 7l8.4 5.9L20.4 7",
+            award:   "M12 3.6a4.7 4.7 0 1 0 0 9.4 4.7 4.7 0 0 0 0-9.4zM8.9 12.6 7.2 20.4l4.8-2.4 4.8 2.4-1.7-7.8",
+            clock:   "M12 3.9a8.1 8.1 0 1 0 0 16.2 8.1 8.1 0 0 0 0-16.2zM12 7.6V12l3 1.8",
+            check:   "M5 12.4 9.6 17 19 7.2",
+            x:       "M6.6 6.6 17.4 17.4M17.4 6.6 6.6 17.4",
+            square:  "M4.8 4.8h14.4v14.4H4.8z",
+            minus:   "M5.5 12h13",
+            arrow:   "M4 12h14.5M13 6.2 18.8 12 13 17.8",
+            star:    "m12 3.7 2.6 5.5 6 .9-4.3 4.2 1 6-5.3-2.8-5.3 2.8 1-6L3.4 10l6-.9z",
+            heart:   "M12 20s-7.3-4.5-7.3-9.4A4.3 4.3 0 0 1 12 7.7a4.3 4.3 0 0 1 7.3 2.9C19.3 15.5 12 20 12 20z",
+            coin:    "M12 3.9a8.1 8.1 0 1 0 0 16.2 8.1 8.1 0 0 0 0-16.2zM12 7v10M14.4 9.4c0-1-1.1-1.8-2.4-1.8s-2.4.8-2.4 1.8 1 1.5 2.4 1.9 2.4.9 2.4 1.9-1.1 1.8-2.4 1.8-2.4-.8-2.4-1.8",
+            chart:   "M6.5 20v-8M12 20V4.6M17.5 20v-5.6",
+            doc:     "M6.2 3.6h7.6l4 4v12.8H6.2zM13.8 3.6v4h4M8.8 12.4h6.4M8.8 15.8h6.4",
+            bag:     "M5.4 8h13.2l1 12H4.4zM9 8V6.4a3 3 0 0 1 6 0V8",
+            sprout:  "M12 20.2v-7.4M12.2 12.8c0-3-2.1-5.1-5.1-5.1 0 3 2.1 5.1 5.1 5.1zM11.8 12.8c0-3 2.1-5.1 5.1-5.1 0 3-2.1 5.1-5.1 5.1z",
+            flame:   "M12 20.2a5.2 5.2 0 0 0 5.2-5.2c0-4.2-5.2-8.3-5.2-11.4 0 0-1.6 3.1-3.7 5.2S6.8 14 6.8 15A5.2 5.2 0 0 0 12 20.2z",
+            pen:     "M4.2 19.8 5.4 15.6 16.2 4.8l3 3L8.4 18.6zM14.6 6.4l3 3",
+            book:    "M4.8 5.6a2 2 0 0 1 2-2H19v13.6H6.8a2 2 0 0 0-2 2zM4.8 19.2a2 2 0 0 0 2 1.2H19v-3.2",
+            trophy:  "M8 4.4h8v4.2a4 4 0 0 1-8 0zM8 6H5.4v1.4A2.6 2.6 0 0 0 8 10M16 6h2.6v1.4A2.6 2.6 0 0 1 16 10M10.2 14.8h3.6M9 20.2h6l-.6-5.4h-4.8z",
+            lock:    "M6.4 10.4h11.2v9.4H6.4zM8.9 10.4V7.9a3.1 3.1 0 0 1 6.2 0v2.5",
+            alert:   "M12 3.8 2.9 19.6h18.2zM12 9.8v4.1M12 16.8v.1",
+            sparkle: "m11 3.8 1.5 4.2 4.2 1.5-4.2 1.5L11 15.2 9.5 11 5.3 9.5 9.5 8zM18 14.6l.7 1.9 1.9.7-1.9.7-.7 1.9-.7-1.9-1.9-.7 1.9-.7z",
+            inbox:   "M3.6 13.2h4.2l1.2 2.6h6l1.2-2.6h4.2M4.7 13.2 7 4.8h10l2.3 8.4v6.4h-14.6z"
+        };
+
+        const Ico = ({ name, size = 18, className = "", fill = false, stroke = 1.8 }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24"
+                fill={fill ? "currentColor" : "none"} stroke="currentColor" strokeWidth={stroke}
+                strokeLinecap="round" strokeLinejoin="round"
+                className={`inline-block shrink-0 ${className}`} aria-hidden="true"
+                style={{ verticalAlign: '-0.16em' }}>
+                <path d={ICONS[name]} />
+            </svg>
+        );
+
+        const toDeadline = (mmdd) => {
+            const [m, d] = mmdd.split('/').map(Number);
+            return new Date(CAMP_YEAR, m - 1, d, DEADLINE_HOUR, DEADLINE_MINUTE, 59);
+        };
+
+        const openLink = (url) => { if (url) window.open(url, '_blank', 'noopener'); };
+
+        const hostOf = (url) => {
+            try { return new URL(url).hostname.replace(/^www\./, ''); } catch (e) { return '連結'; }
+        };
+
+        const greeting = () => {
+            const h = new Date().getHours();
+            if (h < 5) return "還沒睡啊";
+            if (h < 11) return "早安";
+            if (h < 14) return "午安";
+            if (h < 18) return "下午好";
+            return "晚安";
+        };
+
+        // 學員代表色：照名單順序給，順序固定不會跳來跳去
+        const colorOf = (name) => {
+            const i = STUDENTS.indexOf(name);
+            if (i >= 0) return POP[i % POP.length];
+            let h = 0;
+            for (let k = 0; k < (name || '').length; k++) h = (h * 31 + name.charCodeAt(k)) | 0;
+            return POP[Math.abs(h) % POP.length];
+        };
+
+        /* --- 小元件 --------------------------------------------------- */
+
+        const Avatar = ({ name, size = 40, ring }) => (
+            <div className="shrink-0 flex items-center justify-center fun text-white"
+                style={{
+                    width: size, height: size, fontSize: size * 0.42,
+                    background: colorOf(name),
+                    border: `2.5px solid var(--ink)`,
+                    borderRadius: '50%',
+                    boxShadow: ring ? '0 0 0 3px var(--highlight)' : 'none'
+                }}>
+                {(name || '?').trim()[0]}
+            </div>
+        );
+
+        const Meter = ({ value, max, color }) => (
+            <div className="meter" role="progressbar" aria-valuenow={value} aria-valuemin="0" aria-valuemax={max}>
+                <i style={{ width: `${max > 0 ? Math.min(100, (value / max) * 100) : 0}%`, background: color || 'var(--accent)' }}></i>
+            </div>
+        );
+
+        const Title = ({ icon, children, sub }) => (
+            <div className="mb-8">
+                <h2 className="text-[26px] md:text-[30px] font-bold leading-snug flex items-center gap-3">
+                    <Ico name={icon} size={27} className="text-accent" /><span className="marker">{children}</span>
+                </h2>
+                {sub && <p className="text-[15px] text-ink-soft mt-3 leading-relaxed">{sub}</p>}
+            </div>
+        );
+
+        // 狀態標記：顏色 + 符號 + 文字三個管道，不靠顏色單獨表意
+        const STATE = {
+            ok:      { icon: 'check',  color: 'text-ok',        label: '完成' },
+            miss:    { icon: 'x',      color: 'text-bad',       label: '沒交' },
+            pending: { icon: 'square', color: 'text-ink-faint', label: '還沒到' },
+            na:      { icon: 'minus',  color: 'text-ink-faint', label: '免評' }
+        };
+
+        function App() {
+            const [ready, setReady] = useState(false);
+            const [identity, setIdentity] = useState(() => {
+                try { return JSON.parse(localStorage.getItem('portal_identity')); } catch (e) { return null; }
+            });
+            const [nameInput, setNameInput] = useState("");
+            const [view, setView] = useState('home');
+            const [statusTab, setStatusTab] = useState('badges');
+            const [assignments, setAssignments] = useState([]);
+            const [comments, setComments] = useState([]);
+            const [announcement, setAnnouncement] = useState("");
+            const [toast, setToast] = useState(null);
+            const [confetti, setConfetti] = useState([]);
+            const [now, setNow] = useState(new Date());
+            const [uid, setUid] = useState(null);   // 這台裝置的 Firebase 匿名身分，用來判斷「這筆是不是我寫的」
+            const [peerDate, setPeerDate] = useState(null);
+            const quote = useMemo(() => QUOTES[Math.floor(Math.random() * QUOTES.length)], []);
+
+            useEffect(() => {
+                const t = setInterval(() => setNow(new Date()), 30000);
+                return () => clearInterval(t);
+            }, []);
+
+            /* --- 慶祝 --------------------------------------------- */
+            const celebrate = () => {
+                const pieces = Array.from({ length: 46 }, (_, i) => ({
+                    id: Date.now() + '-' + i,
+                    left: Math.random() * 100,
+                    delay: Math.random() * 0.4,
+                    dur: 1.7 + Math.random() * 1.2,
+                    color: POP[i % POP.length],
+                    w: 7 + Math.random() * 7,
+                    h: 9 + Math.random() * 9,
+                    round: Math.random() > 0.6
+                }));
+                setConfetti(pieces);
+                setTimeout(() => setConfetti([]), 3400);
+            };
+
+            const showToast = (msg, party) => {
+                setToast(msg);
+                if (party) celebrate();
+                setTimeout(() => setToast(null), 2800);
+            };
+
+            /* --- 連線 --------------------------------------------- */
+            useEffect(() => {
+                const check = setInterval(() => {
+                    if (window.fb) {
+                        const env = window.fb;
+                        env.signInAnonymously(env.auth);
+                        env.onAuthStateChanged(env.auth, (u) => {
+                            if (u) {
+                                setUid(u.uid);
+                                env.onSnapshot(env.collection(env.db, 'artifacts', env.appId, 'public', 'data', 'assignments'),
+                                    s => setAssignments(s.docs.map(d => ({ id: d.id, ...d.data() }))));
+                                env.onSnapshot(env.collection(env.db, 'artifacts', env.appId, 'public', 'data', 'comments'), s => {
+                                    const data = s.docs.map(d => ({ id: d.id, ...d.data() }));
+                                    data.sort((a, b) => (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0));
+                                    setComments(data);
+                                });
+                                env.onSnapshot(env.doc(env.db, 'artifacts', env.appId, 'public', 'announcement'), d => {
+                                    if (d.exists()) setAnnouncement(d.data().text);
+                                });
+                                setReady(true);
+                                const ov = document.getElementById('loading-overlay');
+                                if (ov) ov.style.display = 'none';
+                            }
+                        });
+                        clearInterval(check);
+                    }
+                }, 400);
+            }, []);
+
+            /* --- 計算 --------------------------------------------- */
+
+            const fmtDate = (createdAt) => {
+                if (!createdAt) return "剛剛";
+                const d = createdAt.toDate ? createdAt.toDate() : new Date();
+                return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+            };
+
+            const getHWStatus = (weekDate, createdAt) => {
+                if (!createdAt) return "沒交";
+                const submitDate = createdAt.toDate ? createdAt.toDate() : new Date();
+                return submitDate > toDeadline(weekDate) ? "遲交" : "準時";
+            };
+
+            const activeWeek = useMemo(() => {
+                const i = CAMP_WEEKS.findIndex(w => toDeadline(w.date) > now);
+                const idx = i === -1 ? CAMP_WEEKS.length - 1 : i;
+                return { ...CAMP_WEEKS[idx], index: idx };
+            }, [now]);
+
+            const activeFeedbackWeek = useMemo(() => {
+                const i = CAMP_WEEKS.findIndex(w => toDeadline(w.date) <= now && toDeadline(w.feedbackDue) > now);
+                return i === -1 ? null : { ...CAMP_WEEKS[i], index: i };
+            }, [now]);
+
+            const shownPeerDate = peerDate || (activeFeedbackWeek || activeWeek).date;
+
+            const rosterNames = STUDENTS.length > 0
+                ? STUDENTS
+                : Array.from(new Set(assignments.map(a => a.studentName).filter(Boolean))).sort();
+
+            // 規則是「回饋所有同學」，所以那一週有交作業的都算，遲交的也要回饋
+            const getPeerStats = (weekDate, userName) => {
+                const targets = assignments.filter(a => a.weekDate === weekDate && a.studentName !== userName);
+                const doneIds = comments.filter(c => c.author === userName).map(c => c.assignmentId);
+                const completed = targets.filter(a => doneIds.includes(a.id));
+                return {
+                    numerator: completed.length,
+                    denominator: targets.length,
+                    remainingNames: targets.filter(a => !doneIds.includes(a.id)).map(a => a.studentName)
+                };
+            };
+
+            const getDepositStatus = (userName) => {
+                let missedWork = 0, missedFeedback = 0;
+                const rows = CAMP_WEEKS.map((w, i) => {
+                    const submitted = assignments.some(a => a.studentName === userName && a.weekDate === w.date);
+                    let work = 'pending';
+                    if (submitted) work = 'ok';
+                    else if (now > toDeadline(w.date)) { work = 'miss'; missedWork++; }
+
+                    const st = getPeerStats(w.date, userName);
+                    const fbPassed = now > toDeadline(w.feedbackDue);
+                    let fb = 'pending';
+                    if (st.denominator === 0) fb = fbPassed ? 'na' : 'pending';
+                    else if (st.numerator >= st.denominator) fb = 'ok';
+                    else if (fbPassed) { fb = 'miss'; missedFeedback++; }
+
+                    return { week: i + 1, date: w.date, feedbackDue: w.feedbackDue, work, fb, stats: st };
+                });
+                const deducted = missedWork * PENALTY_WORK + missedFeedback * PENALTY_FEEDBACK;
+                return {
+                    rows, missedWork, missedFeedback,
+                    deducted: Math.min(deducted, DEPOSIT_TOTAL),
+                    remaining: Math.max(0, DEPOSIT_TOTAL - deducted),
+                    kicked: missedWork > KICK_THRESHOLD || missedFeedback > KICK_THRESHOLD
+                };
+            };
+
+            // 徽章：全部從實際資料算出來，不用另外記錄
+            const getBadges = (userName) => {
+                const d = getDepositStatus(userName);
+                const mine = assignments.filter(a => a.studentName === userName);
+                const myIds = mine.map(a => a.id);
+                const onTime = mine.filter(a => getHWStatus(a.weekDate, a.createdAt) === "準時").length;
+                const fullFbWeeks = d.rows.filter(r => r.fb === 'ok').length;
+                const myComments = comments.filter(c => c.author === userName && !myIds.includes(c.assignmentId));
+                const likes = comments.filter(c => c.author === userName)
+                    .reduce((n, c) => n + (c.likedBy || []).length, 0);
+
+                let run = 0, best = 0;
+                CAMP_WEEKS.forEach(w => {
+                    if (mine.some(a => a.weekDate === w.date)) { run++; best = Math.max(best, run); }
+                    else if (now > toDeadline(w.date)) run = 0;
+                });
+
+                const half = Math.ceil(CAMP_WEEKS.length / 2);
+                const perfect = d.rows.every(r => r.work === 'ok') && d.rows.every(r => r.fb === 'ok' || r.fb === 'na');
+
+                return [
+                    { icon: 'sprout', name: '開張大吉', desc: '交出第一篇作品',              got: mine.length >= 1,      now: mine.length, goal: 1 },
+                    { icon: 'clock', name: '準時寶寶', desc: '準時繳交 3 次',               got: onTime >= 3,           now: onTime, goal: 3 },
+                    { icon: 'chat', name: '全勤回饋', desc: '有一週回饋完所有同學',        got: fullFbWeeks >= 1,      now: fullFbWeeks, goal: 1 },
+                    { icon: 'flame', name: '三連發',   desc: '連續 3 週都有交',             got: best >= 3,             now: best, goal: 3 },
+                    { icon: 'pen', name: '回饋達人', desc: '累積寫出 10 則回饋',          got: myComments.length >= 10, now: myComments.length, goal: 10 },
+                    { icon: 'heart', name: '人氣回饋', desc: '你的回饋被按讚 5 次',         got: likes >= 5,            now: likes, goal: 5 },
+                    { icon: 'book', name: '半程達陣', desc: `完成 ${half} 週作品`,          got: mine.length >= half,   now: mine.length, goal: half },
+                    { icon: 'trophy', name: '完美結業', desc: `${CAMP_WEEKS.length} 週全交、回饋全完成`, got: perfect, now: d.rows.filter(r => r.work === 'ok').length, goal: CAMP_WEEKS.length }
+                ];
+            };
+
+            const countdown = (target) => {
+                const ms = target - now;
+                if (ms <= 0) return null;
+                return { d: Math.floor(ms / 86400000), h: Math.floor((ms % 86400000) / 3600000), m: Math.floor((ms % 3600000) / 60000) };
+            };
+
+            /* --- 動作 --------------------------------------------- */
+
+            const submitAssignment = async (weekDate, inputId) => {
+                const el = document.getElementById(inputId);
+                if (!el || !el.value.trim()) return;
+                const url = el.value.trim();
+                el.value = '';
+                await window.fb.addDoc(window.fb.collection(window.fb.db, 'artifacts', window.fb.appId, 'public', 'data', 'assignments'), {
+                    studentName: identity.name, weekDate, url, uid, createdAt: window.fb.serverTimestamp()
+                });
+                showToast(`第 ${CAMP_WEEKS.findIndex(w => w.date === weekDate) + 1} 週作品交出去了！`, true);
+            };
+
+            const submitComment = async (assignmentId, weekDate) => {
+                const el = document.getElementById(`cm-${assignmentId}`);
+                if (!el || !el.value.trim()) return;
+                const text = el.value.trim();
+                el.value = '';
+                const before = getPeerStats(weekDate, identity.name);
+                await window.fb.addDoc(window.fb.collection(window.fb.db, 'artifacts', window.fb.appId, 'public', 'data', 'comments'), {
+                    assignmentId, author: identity.name, text, uid, createdAt: window.fb.serverTimestamp(), likedBy: []
+                });
+                // 剛好補完這一週最後一個人，就放彩帶
+                const finishing = before.denominator > 0 && before.numerator + 1 >= before.denominator;
+                showToast(finishing ? "這一週的回饋全部完成了！" : "回饋送出了", finishing);
+            };
+
+            const toggleLike = async (comment) => {
+                const ref = window.fb.doc(window.fb.db, 'artifacts', window.fb.appId, 'public', 'data', 'comments', comment.id);
+                const likedBy = comment.likedBy || [];
+                await window.fb.updateDoc(ref, likedBy.includes(identity.name)
+                    ? { likedBy: window.fb.arrayRemove(identity.name) }
+                    : { likedBy: window.fb.arrayUnion(identity.name) });
+            };
+
+            // 資料庫規則只允許刪自己寫的，被擋下來時給一個看得懂的訊息
+            const removeDoc = async (col, id, ask, done) => {
+                if (!confirm(ask)) return;
+                try {
+                    await window.fb.deleteDoc(window.fb.doc(window.fb.db, 'artifacts', window.fb.appId, 'public', 'data', col, id));
+                    if (done) showToast(done);
+                } catch (e) {
+                    showToast("刪不掉：這筆不是在這台裝置上送出的");
+                }
+            };
+
+            const removeAssignment = (id) => removeDoc('assignments', id, "確定要刪除這份作業嗎？", "已刪除");
+            const removeComment = (id) => removeDoc('comments', id, "確定要刪除這則回饋嗎？");
+
+            // 只有「同一個人、而且在同一台裝置送出的」才給刪除按鈕
+            const canDelete = (doc) => !!uid && doc.uid === uid;
+
+            const doLogin = (n) => {
+                const name = (n || "").trim();
+                if (!name) return;
+                setIdentity({ name });
+                localStorage.setItem('portal_identity', JSON.stringify({ name }));
+            };
+
+            if (!ready) return null;
+
+            /* --- 登入 --------------------------------------------- */
+
+            if (!identity) {
+                return (
+                    <div className="min-h-screen flex items-center justify-center p-6">
+                        <div className="w-full max-w-sm pop-in">
+                            <div className="text-center mb-7">
+                                <div className="flex justify-center mb-3"><Ico name="bag" size={54} stroke={1.5} className="text-accent" /></div>
+                                <div className="fun text-[13px] tracking-[.2em] text-ink-soft">{CAMP_PERIOD}</div>
+                                <h1 className="text-[27px] font-bold leading-snug mt-2"><span className="marker">{CAMP_TITLE}</span></h1>
+                            </div>
+
+                            <div className="sticker p-7">
+                                <label className="block text-[15px] font-bold text-ink-soft mb-3">你是哪一位呀？</label>
+                                {STUDENTS.length > 0 ? (
+                                    <select id="name-sel" defaultValue=""
+                                        className="w-full sticker-sm px-4 py-3 text-[17px] outline-none appearance-none bg-surface">
+                                        <option value="" disabled>點這裡選名字</option>
+                                        {STUDENTS.map(n => <option key={n} value={n}>{n}</option>)}
+                                    </select>
+                                ) : (
+                                    <input value={nameInput} onChange={e => setNameInput(e.target.value)}
+                                        onKeyDown={e => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) doLogin(nameInput); }}
+                                        className="w-full sticker-sm px-4 py-3 text-[17px] outline-none"
+                                        placeholder="輸入你的名字" />
+                                )}
+                                <button
+                                    onClick={() => doLogin(STUDENTS.length > 0 ? document.getElementById('name-sel').value : nameInput)}
+                                    className="sticker-sm pressable w-full mt-5 py-3.5 text-[17px] bg-accent text-white">
+                                    出發囉 →
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            /* --- 共用資料 ------------------------------------------ */
+
+            const dep = getDepositStatus(identity.name);
+            const badges = getBadges(identity.name);
+            const gotBadges = badges.filter(b => b.got);
+            const myAssignments = assignments.filter(a => a.studentName === identity.name);
+            const myIds = myAssignments.map(a => a.id);
+            const receivedCount = comments.filter(c => myIds.includes(c.assignmentId) && c.author !== identity.name).length;
+            const doneWeeks = dep.rows.filter(r => r.work === 'ok').length;
+
+            const NAV = [
+                { key: 'home',   icon: 'home',   label: '首頁' },
+                { key: 'upload', icon: 'upload', label: '交作業' },
+                { key: 'peer',   icon: 'chat',   label: '互評' },
+                { key: 'inbox',  icon: 'mail',   label: '我的' },
+                { key: 'status', icon: 'award',  label: '成就' }
+            ];
+
+            const buildPeerList = (weekDate) => {
+                const subs = assignments.filter(a => a.weekDate === weekDate);
+                const names = rosterNames.slice();
+                subs.forEach(a => { if (!names.includes(a.studentName)) names.push(a.studentName); });
+                const items = names.map(name => ({ name, a: subs.find(x => x.studentName === name) || null }));
+                return items.sort((x, y) => {
+                    if (x.name === identity.name) return -1;
+                    if (y.name === identity.name) return 1;
+                    if (!!x.a !== !!y.a) return x.a ? -1 : 1;
+                    return 0;
+                });
+            };
+
+            /* --- 畫面 --------------------------------------------- */
+
+            return (
+                <div className="min-h-screen lg:flex">
+                    {/* 側邊：桌機 */}
+                    <nav className="hidden lg:flex flex-col w-64 shrink-0 px-6 py-8 sticky top-0 h-screen"
+                        style={{ borderRight: '2.5px solid var(--ink)' }}>
+                        <div className="text-center">
+                            <div className="flex justify-center"><Ico name="bag" size={34} stroke={1.6} className="text-accent" /></div>
+                            <div className="text-[16px] font-bold leading-snug mt-2"><span className="marker">{CAMP_TITLE}</span></div>
+                            <div className="fun text-[12px] tracking-[.16em] text-ink-muted mt-2">{CAMP_PERIOD}</div>
+                        </div>
+
+                        <div className="sticker-sm p-3 mt-7 flex items-center gap-3">
+                            <Avatar name={identity.name} size={40} />
+                            <div className="min-w-0">
+                                <div className="text-[15px] truncate">{identity.name}</div>
+                                <div className="fun text-[13px] text-ink-soft tnum flex items-center gap-1.5">
+                                    <Ico name="award" size={14} />{gotBadges.length}／{badges.length}
+                                    <span className="ml-1">${dep.remaining}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="mt-7 flex-1 space-y-2.5">
+                            {NAV.map(n => (
+                                <button key={n.key} onClick={() => setView(n.key)}
+                                    className={`w-full text-left px-4 py-2.5 text-[16px] flex items-center gap-3 rounded-2xl transition ${view === n.key ? 'sticker-sm bg-accent-soft' : 'hover:bg-accent-soft/60'}`}>
+                                    <Ico name={n.icon} size={20} />{n.label}
+                                </button>
+                            ))}
+                        </div>
+
+                        <button onClick={() => { localStorage.clear(); location.reload(); }}
+                            className="text-[14px] text-ink-muted hover:text-bad transition text-left px-4">
+                            登出
+                        </button>
+                    </nav>
+
+                    {/* 主要內容 */}
+                    <main className="flex-1 min-w-0 px-5 md:px-10 lg:px-14 py-8 lg:py-12 pb-32 lg:pb-14">
+                        <div className={`mx-auto lg:mx-0 ${view === 'peer' ? 'max-w-3xl lg:max-w-5xl' : 'max-w-3xl lg:max-w-4xl'}`}>
+
+                            {/* 手機頁首 */}
+                            <div className="lg:hidden flex items-center justify-between mb-7">
+                                <div className="flex items-center gap-2">
+                                    <Ico name="bag" size={26} stroke={1.6} className="text-accent" />
+                                    <span className="text-[16px] font-bold"><span className="marker">{CAMP_TITLE}</span></span>
+                                </div>
+                                <button onClick={() => { localStorage.clear(); location.reload(); }}>
+                                    <Avatar name={identity.name} size={38} />
+                                </button>
+                            </div>
+
+                            {/* ===================== 首頁 ===================== */}
+                            {view === 'home' && (() => {
+                                const w = activeWeek;
+                                const mine = assignments.find(a => a.studentName === identity.name && a.weekDate === w.date);
+                                const cd = countdown(toDeadline(w.date));
+                                const fw = activeFeedbackWeek;
+                                const fbStats = fw ? getPeerStats(fw.date, identity.name) : null;
+                                const fbDone = fbStats && fbStats.denominator > 0 && fbStats.numerator >= fbStats.denominator;
+                                const urgent = cd && cd.d < 2 && !mine;
+
+                                return (
+                                    <div className="pop-in space-y-7">
+                                        <div>
+                                            <h1 className="text-[27px] md:text-[32px] font-bold leading-snug">
+                                                {greeting()}，{identity.name}！
+                                            </h1>
+                                            <p className="text-[15px] text-ink-soft mt-2">{announcement || quote}</p>
+                                        </div>
+
+                                        {/* 倒數 */}
+                                        <div className={`sticker p-6 md:p-7 ${urgent ? 'bg-highlight' : ''}`}>
+                                            <div className="flex items-center justify-between gap-3 flex-wrap">
+                                                <span className="text-[15px] text-ink-soft flex items-center gap-2">
+                                                    <Ico name="clock" size={17} />第 {w.index + 1} 週 · {w.date}（日）23:59 截止
+                                                </span>
+                                                {mine && <span className="sticker-sm px-3 py-1 text-[14px] flex items-center gap-1.5 text-ok"><Ico name="check" size={15} />已交</span>}
+                                            </div>
+                                            {cd ? (
+                                                <div className="fun mt-3 flex items-baseline gap-1 tnum flex-wrap">
+                                                    <span className="text-[52px] md:text-[62px] leading-none">{cd.d}</span>
+                                                    <span className="text-[16px] text-ink-soft mr-3">天</span>
+                                                    <span className="text-[34px] md:text-[40px] leading-none">{cd.h}</span>
+                                                    <span className="text-[16px] text-ink-soft mr-3">小時</span>
+                                                    <span className="text-[34px] md:text-[40px] leading-none">{cd.m}</span>
+                                                    <span className="text-[16px] text-ink-soft">分</span>
+                                                </div>
+                                            ) : (
+                                                <div className="fun mt-3 text-[36px] text-ink-muted">時間到囉</div>
+                                            )}
+                                            {urgent && <p className="text-[15px] mt-3 flex items-center gap-2 text-bad"><Ico name="alert" size={17} />剩不到兩天，快去生一篇！</p>}
+                                        </div>
+
+                                        {/* 待辦一 */}
+                                        <div className="sticker p-6 md:p-7">
+                                            <div className="flex items-start gap-3">
+                                                <Ico name={mine ? 'check' : 'upload'} size={24} className={mine ? 'text-ok' : 'text-accent'} />
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="text-[18px] font-bold">繳交第 {w.index + 1} 週作品</div>
+                                                    {mine ? (
+                                                        <button onClick={() => openLink(mine.url)}
+                                                            className="text-[15px] text-accent-deep underline underline-offset-4 mt-1">
+                                                            {hostOf(mine.url)} ↗
+                                                        </button>
+                                                    ) : (
+                                                        <p className="text-[15px] text-ink-soft mt-1">SEO / 社群任一，Threads 文不算</p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            {!mine && (
+                                                <div className="flex gap-3 mt-5">
+                                                    <input id="home-input"
+                                                        onKeyDown={e => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) submitAssignment(w.date, 'home-input'); }}
+                                                        className="flex-1 min-w-0 sticker-sm px-4 py-2.5 text-[16px] outline-none"
+                                                        placeholder="貼上你的作品連結" />
+                                                    <button onClick={() => submitAssignment(w.date, 'home-input')}
+                                                        className="sticker-sm pressable px-5 text-[16px] bg-accent text-white shrink-0">交！</button>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* 待辦二 */}
+                                        <div className="sticker p-6 md:p-7">
+                                            <div className="flex items-start gap-3">
+                                                <Ico name={fbDone ? 'sparkle' : 'chat'} size={24} className={fbDone ? 'text-ok' : 'text-accent'} />
+                                                <div className="flex-1 min-w-0">
+                                                    {fw ? (
+                                                        <>
+                                                            <div className="text-[18px] font-bold">回饋第 {fw.index + 1} 週（{fw.date}）同學的作品</div>
+                                                            <p className="text-[15px] text-ink-soft mt-1">期限 {fw.feedbackDue} 23:59</p>
+                                                            {fbStats.denominator > 0 ? (
+                                                                <div className="mt-5">
+                                                                    <div className="flex justify-between items-baseline mb-2">
+                                                                        <span className="text-[15px] text-ink-soft">回饋進度</span>
+                                                                        <span className="fun text-[19px] tnum">{fbStats.numerator} / {fbStats.denominator}</span>
+                                                                    </div>
+                                                                    <Meter value={fbStats.numerator} max={fbStats.denominator} />
+                                                                    {fbStats.remainingNames.length > 0 ? (
+                                                                        <>
+                                                                            <div className="flex flex-wrap items-center gap-2 mt-4">
+                                                                                <span className="text-[14px] text-ink-soft">還差：</span>
+                                                                                {fbStats.remainingNames.map(n => (
+                                                                                    <span key={n} className="sticker-sm px-3 py-0.5 text-[14px] flex items-center gap-1.5">
+                                                                                        <i className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: colorOf(n) }}></i>{n}
+                                                                                    </span>
+                                                                                ))}
+                                                                            </div>
+                                                                            <button onClick={() => { setPeerDate(fw.date); setView('peer'); }}
+                                                                                className="sticker-sm pressable px-5 py-2 text-[16px] bg-accent text-white mt-5">
+                                                                                去回饋 →
+                                                                            </button>
+                                                                        </>
+                                                                    ) : (
+                                                                        <p className="text-[15px] mt-4 flex items-center gap-2 text-ok"><Ico name="sparkle" size={17} />這一週全部回饋完了，太強了！</p>
+                                                                    )}
+                                                                </div>
+                                                            ) : (
+                                                                <p className="text-[15px] text-ink-muted mt-2">那一週還沒有人交作業</p>
+                                                            )}
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <div className="text-[18px] font-bold">回饋同學的作品</div>
+                                                            <p className="text-[15px] text-ink-soft mt-1">等第一週作業截止後就開始囉</p>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* 三張小貼紙 */}
+                                        <div className="grid grid-cols-3 gap-3 md:gap-4">
+                                            <div className="sticker-sm p-4 text-center">
+                                                <div className="flex justify-center"><Ico name="doc" size={21} className="text-accent" /></div>
+                                                <div className="fun text-[27px] tnum mt-1">{doneWeeks}<span className="text-[15px] text-ink-muted">/{CAMP_WEEKS.length}</span></div>
+                                                <div className="text-[13px] text-ink-soft">已完成</div>
+                                            </div>
+                                            <div className="sticker-sm p-4 text-center">
+                                                <div className="flex justify-center"><Ico name="coin" size={21} className="text-accent" /></div>
+                                                <div className={`fun text-[27px] tnum mt-1 ${dep.remaining === DEPOSIT_TOTAL ? '' : dep.remaining === 0 ? 'text-bad' : 'text-warn'}`}>${dep.remaining}</div>
+                                                <div className="text-[13px] text-ink-soft">保證金</div>
+                                            </div>
+                                            <button onClick={() => setView('inbox')} className="sticker-sm pressable p-4 text-center">
+                                                <div className="flex justify-center"><Ico name="mail" size={21} className="text-accent" /></div>
+                                                <div className="fun text-[27px] tnum mt-1">{receivedCount}</div>
+                                                <div className="text-[13px] text-ink-soft">收到回饋</div>
+                                            </button>
+                                        </div>
+
+                                        {/* 徽章預覽 */}
+                                        <div className="sticker p-6">
+                                            <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+                                                <span className="text-[17px] font-bold flex items-center gap-2"><Ico name="award" size={19} className="text-accent" />我的徽章 <span className="fun tnum text-ink-soft">{gotBadges.length}／{badges.length}</span></span>
+                                                <button onClick={() => { setView('status'); setStatusTab('badges'); }}
+                                                    className="text-[14px] text-accent-deep underline underline-offset-4">看全部 →</button>
+                                            </div>
+                                            <div className="flex flex-wrap gap-2.5">
+                                                {badges.map(b => (
+                                                    <div key={b.name} title={`${b.name}：${b.desc}`}
+                                                        className="w-12 h-12 flex items-center justify-center sticker-sm"
+                                                        style={b.got ? {} : { opacity: .3, boxShadow: 'none' }}>
+                                                        <Ico name={b.icon} size={22} className={b.got ? 'text-accent' : 'text-ink-faint'} />
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })()}
+
+                            {/* ===================== 交作業 ===================== */}
+                            {view === 'upload' && (
+                                <div className="pop-in">
+                                    <Title icon="upload" sub={`共 ${CAMP_WEEKS.length} 次，每週日 23:59 截止。SEO / 社群任一都可以，Threads 文不算。`}>交作業</Title>
+
+                                    <div className="space-y-5">
+                                        {CAMP_WEEKS.map((w, i) => {
+                                            const mine = assignments.find(a => a.studentName === identity.name && a.weekDate === w.date);
+                                            const passed = now > toDeadline(w.date);
+                                            const isNow = w.date === activeWeek.date;
+                                            return (
+                                                <div key={w.date}
+                                                    className={`sticker p-5 md:p-6 ${i % 2 ? '' : ''} ${isNow ? 'bg-highlight/50' : ''} ${!isNow && passed && mine ? 'opacity-70' : ''}`}>
+                                                    <div className="flex items-center gap-4 flex-wrap">
+                                                        <div className="fun text-[19px] w-12 h-12 shrink-0 flex items-center justify-center sticker-sm"
+                                                            style={{ background: isNow ? 'var(--accent)' : 'var(--paper)', color: isNow ? '#fff' : 'var(--ink)' }}>
+                                                            W{i + 1}
+                                                        </div>
+                                                        <div className="flex-1 min-w-0">
+                                                            <div className="fun text-[17px] tnum">{w.date}（日）23:59</div>
+                                                            <div className="text-[14px] text-ink-soft">回饋期限 {w.feedbackDue}</div>
+                                                        </div>
+                                                        {(() => {
+                                                            const st = mine
+                                                                ? (getHWStatus(w.date, mine.createdAt) === '準時'
+                                                                    ? { i: 'check', t: '準時', c: 'text-ok' }
+                                                                    : { i: 'alert', t: '遲交', c: 'text-warn' })
+                                                                : passed ? { i: 'x', t: '沒交', c: 'text-bad' }
+                                                                : isNow ? { i: 'arrow', t: '本週', c: 'text-accent' }
+                                                                : { i: 'square', t: '還沒到', c: 'text-ink-faint' };
+                                                            return (
+                                                                <span className={`text-[15px] shrink-0 flex items-center gap-1.5 ${st.c}`}>
+                                                                    <Ico name={st.i} size={16} />{st.t}
+                                                                </span>
+                                                            );
+                                                        })()}
+                                                    </div>
+
+                                                    {mine ? (
+                                                        <div className="flex items-center justify-between gap-4 mt-4 sticker-sm px-4 py-2.5 bg-accent-soft"
+                                                            style={{ boxShadow: 'none' }}>
+                                                            <button onClick={() => openLink(mine.url)}
+                                                                className="text-[15px] text-accent-deep truncate underline underline-offset-4 text-left">
+                                                                {hostOf(mine.url)} ↗
+                                                            </button>
+                                                            {canDelete(mine) && (
+                                                                <button onClick={() => removeAssignment(mine.id)}
+                                                                    className="text-[14px] text-ink-muted hover:text-bad shrink-0">刪除</button>
+                                                            )}
+                                                        </div>
+                                                    ) : (
+                                                        <div className="flex gap-3 mt-4">
+                                                            <input id={`in-${w.date}`}
+                                                                onKeyDown={e => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) submitAssignment(w.date, `in-${w.date}`); }}
+                                                                className="flex-1 min-w-0 sticker-sm px-4 py-2.5 text-[16px] outline-none"
+                                                                placeholder="貼上作品連結" />
+                                                            <button onClick={() => submitAssignment(w.date, `in-${w.date}`)}
+                                                                className="sticker-sm pressable px-5 text-[16px] bg-accent text-white shrink-0">交！</button>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* ===================== 互評 ===================== */}
+                            {view === 'peer' && (() => {
+                                const stats = getPeerStats(shownPeerDate, identity.name);
+                                const wk = CAMP_WEEKS.find(x => x.date === shownPeerDate);
+                                const list = buildPeerList(shownPeerDate);
+                                const submittedList = list.filter(x => x.a);
+                                const pendingList = list.filter(x => !x.a);
+
+                                return (
+                                    <div className="pop-in">
+                                        <Title icon="chat" sub="規則是回饋「所有」交作業的同學，遲交的也要回饋到。">同儕互評</Title>
+
+                                        {/* 週次切換 */}
+                                        <div className="flex gap-2.5 overflow-x-auto scrollbar-hide -mx-5 px-5 md:mx-0 md:px-0 pb-3 mb-6">
+                                            {CAMP_WEEKS.map((w, i) => (
+                                                <button key={w.date} onClick={() => setPeerDate(w.date)}
+                                                    className={`shrink-0 sticker-sm px-4 py-2 fun text-[15px] tnum transition ${w.date === shownPeerDate ? 'bg-accent text-white' : 'bg-surface'}`}>
+                                                    W{i + 1}<span className="text-[12px] ml-1.5 opacity-70">{w.date}</span>
+                                                </button>
+                                            ))}
+                                        </div>
+
+                                        {/* 進度貼紙 */}
+                                        <div className="sticker p-6 mb-8">
+                                            <div className="flex items-end justify-between gap-5 flex-wrap">
+                                                <div>
+                                                    <div className="text-[15px] text-ink-soft">你在 {shownPeerDate} 那一週的回饋進度</div>
+                                                    <div className="fun text-[40px] leading-none mt-2 tnum">
+                                                        {stats.numerator}<span className="text-[19px] text-ink-muted"> / {stats.denominator}</span>
+                                                    </div>
+                                                </div>
+                                                <div className="text-left md:text-right">
+                                                    <div className="text-[14px] text-ink-soft">回饋期限</div>
+                                                    <div className="fun text-[17px] tnum">{wk ? wk.feedbackDue : '—'} 23:59</div>
+                                                </div>
+                                            </div>
+                                            <div className="mt-4"><Meter value={stats.numerator} max={stats.denominator} /></div>
+                                            {stats.remainingNames.length > 0 && (
+                                                <div className="flex flex-wrap items-center gap-2 mt-4">
+                                                    <span className="text-[14px] text-ink-soft">還差：</span>
+                                                    {stats.remainingNames.map(n => (
+                                                        <span key={n} className="sticker-sm px-3 py-0.5 text-[14px] flex items-center gap-1.5">
+                                                            <i className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: colorOf(n) }}></i>{n}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            )}
+                                            {stats.denominator > 0 && stats.numerator >= stats.denominator && (
+                                                <p className="text-[15px] mt-4 flex items-center gap-2 text-ok"><Ico name="sparkle" size={17} />這一週全部回饋完成，讚啦！</p>
+                                            )}
+                                        </div>
+
+                                        <div className="text-[15px] text-ink-soft mb-4">已繳交 {submittedList.length} / {list.length} 人</div>
+
+                                        <div className="space-y-6">
+                                            {submittedList.map(({ name, a }, idx) => {
+                                                const isSelf = name === identity.name;
+                                                const cs = comments.filter(c => c.assignmentId === a.id);
+                                                const iCommented = cs.some(c => c.author === identity.name);
+                                                return (
+                                                    <div key={a.id} className={`sticker p-5 md:p-6 ${idx % 2 ? '' : ''}`}
+                                                        style={isSelf ? { background: 'var(--accent-soft)' } : {}}>
+                                                        <div className="flex items-center gap-4 flex-wrap">
+                                                            <Avatar name={name} size={46} ring={isSelf} />
+                                                            <div className="flex-1 min-w-0">
+                                                                <div className="text-[18px] font-bold">
+                                                                    {name}{isSelf && <span className="text-[14px] font-normal text-accent-deep ml-2 inline-flex items-center gap-1"><Ico name="star" size={14} />你的作品</span>}
+                                                                </div>
+                                                                <button onClick={() => openLink(a.url)}
+                                                                    className="text-[15px] text-accent-deep underline underline-offset-4 mt-0.5">
+                                                                    {hostOf(a.url)} ↗
+                                                                </button>
+                                                            </div>
+                                                            <span className={`text-[15px] shrink-0 flex items-center gap-1.5 ${isSelf ? 'text-ink-soft' : iCommented ? 'text-ok' : 'text-ink-faint'}`}>
+                                                                <Ico name={isSelf ? 'chat' : iCommented ? 'check' : 'square'} size={16} />
+                                                                {isSelf ? `${cs.length} 則` : iCommented ? '已回饋' : '待回饋'}
+                                                            </span>
+                                                        </div>
+
+                                                        {cs.length > 0 && (
+                                                            <div className="mt-5 space-y-4 md:pl-[62px]">
+                                                                {cs.map(c => {
+                                                                    const likedBy = c.likedBy || [];
+                                                                    const isLiked = likedBy.includes(identity.name);
+                                                                    return (
+                                                                        <div key={c.id} className="sticker-sm p-4" style={{ boxShadow: 'none', background: 'var(--paper)' }}>
+                                                                            <div className="flex items-baseline justify-between gap-3">
+                                                                                <span className="text-[14px] flex items-center gap-1.5">
+                                                                                    <i className="w-2.5 h-2.5 rounded-full inline-block shrink-0" style={{ background: colorOf(c.author) }}></i>
+                                                                                    {c.author}{c.author === name && <span className="text-ink-muted">· 創作理念</span>}
+                                                                                </span>
+                                                                                <span className="text-[13px] text-ink-muted tnum shrink-0">{fmtDate(c.createdAt)}</span>
+                                                                            </div>
+                                                                            <p className="text-[16px] leading-relaxed mt-2">{c.text}</p>
+                                                                            <div className="flex items-center gap-4 mt-2">
+                                                                                <button onClick={() => toggleLike(c)}
+                                                                                    className={`flex items-center gap-1.5 transition hover:scale-110 ${isLiked ? 'text-accent' : 'text-ink-faint'}`}>
+                                                                                    <Ico name="heart" size={17} fill={isLiked} />
+                                                                                    <span className="fun text-[14px] tnum">{likedBy.length || ''}</span>
+                                                                                </button>
+                                                                                {canDelete(c) && (
+                                                                                    <button onClick={() => removeComment(c.id)}
+                                                                                        className="text-[13px] text-ink-muted hover:text-bad">刪除</button>
+                                                                                )}
+                                                                            </div>
+                                                                        </div>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        )}
+
+                                                        <div className="flex gap-3 mt-5 md:pl-[62px]">
+                                                            <input id={`cm-${a.id}`}
+                                                                onKeyDown={e => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) submitComment(a.id, shownPeerDate); }}
+                                                                className="flex-1 min-w-0 sticker-sm px-4 py-2.5 text-[16px] outline-none bg-surface"
+                                                                placeholder={isSelf ? "寫下你的創作理念…" : "寫下你的回饋…"} />
+                                                            <button onClick={() => submitComment(a.id, shownPeerDate)}
+                                                                className="sticker-sm pressable px-5 text-[16px] bg-accent text-white shrink-0">送出</button>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+
+                                        {submittedList.length === 0 && list.length > 0 && (
+                                            <div className="sticker p-10 text-center">
+                                                <div className="flex justify-center"><Ico name="inbox" size={40} stroke={1.5} className="text-ink-faint" /></div>
+                                                <p className="text-[16px] text-ink-soft mt-3">這一週還沒有人交作業</p>
+                                            </div>
+                                        )}
+
+                                        {pendingList.length > 0 && (
+                                            <div className="mt-8 sticker-sm p-5" style={{ boxShadow: 'none', background: 'transparent', borderStyle: 'dashed' }}>
+                                                <div className="text-[15px] text-ink-soft mb-3 flex items-center gap-2"><Ico name="square" size={16} />還沒交的 {pendingList.length} 位</div>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {pendingList.map(({ name }) => (
+                                                        <span key={name} className="px-3 py-1 text-[15px] text-ink-muted flex items-center gap-1.5">
+                                                            <i className="w-2.5 h-2.5 rounded-full inline-block opacity-40" style={{ background: colorOf(name) }}></i>
+                                                            {name}{name === identity.name && '（你）'}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })()}
+
+                            {/* ===================== 我的回饋 ===================== */}
+                            {view === 'inbox' && (
+                                <div className="pop-in">
+                                    <Title icon="mail" sub={receivedCount > 0 ? `目前收到 ${receivedCount} 則回饋。` : "同學回饋你的作品後會出現在這裡。"}>我收到的回饋</Title>
+
+                                    {myAssignments.length === 0 && (
+                                        <div className="sticker p-10 text-center">
+                                            <div className="flex justify-center"><Ico name="inbox" size={40} stroke={1.5} className="text-ink-faint" /></div>
+                                            <p className="text-[16px] text-ink-soft mt-3">你還沒有交過作業喔</p>
+                                        </div>
+                                    )}
+
+                                    <div className="space-y-6">
+                                        {myAssignments.map((a, idx) => {
+                                            const cs = comments.filter(c => c.assignmentId === a.id && c.author !== identity.name);
+                                            const wi = CAMP_WEEKS.findIndex(w => w.date === a.weekDate);
+                                            return (
+                                                <div key={a.id} className={`sticker p-5 md:p-6 ${idx % 2 ? '' : ''}`}>
+                                                    <div className="flex items-center justify-between gap-4 flex-wrap">
+                                                        <div className="flex items-center gap-3">
+                                                            <span className="fun text-[16px] sticker-sm px-3 py-1" style={{ boxShadow: 'none' }}>W{wi + 1}</span>
+                                                            <span className="fun text-[17px] tnum">{a.weekDate}</span>
+                                                        </div>
+                                                        <button onClick={() => openLink(a.url)}
+                                                            className="text-[15px] text-accent-deep underline underline-offset-4">{hostOf(a.url)} ↗</button>
+                                                    </div>
+
+                                                    {cs.length === 0 ? (
+                                                        <p className="text-[15px] text-ink-muted mt-4 flex items-center gap-2"><Ico name="clock" size={16} />還沒有人回饋這一篇</p>
+                                                    ) : (
+                                                        <div className="mt-5 space-y-4">
+                                                            {cs.map(c => (
+                                                                <div key={c.id} className="flex gap-3">
+                                                                    <Avatar name={c.author} size={38} />
+                                                                    <div className="flex-1 min-w-0 sticker-sm p-4" style={{ boxShadow: 'none', background: 'var(--paper)' }}>
+                                                                        <div className="flex items-baseline justify-between gap-3">
+                                                                            <span className="text-[14px]">{c.author}</span>
+                                                                            <span className="text-[13px] text-ink-muted tnum shrink-0">{fmtDate(c.createdAt)}</span>
+                                                                        </div>
+                                                                        <p className="text-[16px] leading-relaxed mt-2">{c.text}</p>
+                                                                        <button onClick={() => toggleLike(c)}
+                                                                            className={`flex items-center gap-1.5 mt-2 transition hover:scale-110 ${(c.likedBy || []).includes(identity.name) ? 'text-accent' : 'text-ink-faint'}`}>
+                                                                            <Ico name="heart" size={17} fill={(c.likedBy || []).includes(identity.name)} />
+                                                                            <span className="fun text-[14px] tnum">{(c.likedBy || []).length || ''}</span>
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* ===================== 成就 ===================== */}
+                            {view === 'status' && (
+                                <div className="pop-in">
+                                    <Title icon="award">我的成就</Title>
+
+                                    <div className="flex gap-2.5 overflow-x-auto scrollbar-hide -mx-5 px-5 md:mx-0 md:px-0 pb-3 mb-7">
+                                        {[
+                                            { k: 'badges',  i: 'award', l: '徽章' },
+                                            { k: 'deposit', i: 'coin',  l: '保證金' },
+                                            { k: 'board',   i: 'chart', l: '全班進度' },
+                                            { k: 'rules',   i: 'doc',   l: '規則' }
+                                        ].map(t => (
+                                            <button key={t.k} onClick={() => setStatusTab(t.k)}
+                                                className={`shrink-0 sticker-sm px-4 py-2 text-[15px] transition flex items-center gap-2 ${statusTab === t.k ? 'bg-accent text-white' : 'bg-surface'}`}>
+                                                <Ico name={t.i} size={16} />{t.l}
+                                            </button>
+                                        ))}
+                                    </div>
+
+                                    {/* --- 徽章牆 --- */}
+                                    {statusTab === 'badges' && (
+                                        <div>
+                                            <div className="sticker p-6 mb-6 text-center">
+                                                <div className="text-[15px] text-ink-soft">已解鎖</div>
+                                                <div className="fun text-[46px] leading-none mt-1 tnum">
+                                                    {gotBadges.length}<span className="text-[20px] text-ink-muted"> / {badges.length}</span>
+                                                </div>
+                                                <div className="mt-4 max-w-xs mx-auto"><Meter value={gotBadges.length} max={badges.length} /></div>
+                                            </div>
+
+                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                                {badges.map((b, i) => (
+                                                    <div key={b.name}
+                                                        className={`sticker p-5 text-center ${i % 2 ? '' : ''}`}
+                                                        style={b.got ? {} : { filter: 'grayscale(1)', opacity: .5 }}>
+                                                        <div className="flex justify-center relative">
+                                                            <Ico name={b.icon} size={38} stroke={1.6} className={b.got ? 'text-accent' : 'text-ink-faint'} />
+                                                            {!b.got && <Ico name="lock" size={15} className="text-ink-muted absolute -right-1 -bottom-1" />}
+                                                        </div>
+                                                        <div className="text-[16px] font-bold mt-2">{b.name}</div>
+                                                        <div className="text-[13px] text-ink-soft mt-1 leading-snug">{b.desc}</div>
+                                                        {!b.got && b.goal > 1 && (
+                                                            <div className="fun text-[13px] text-ink-muted mt-2 tnum">{Math.min(b.now, b.goal)} / {b.goal}</div>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* --- 保證金 --- */}
+                                    {statusTab === 'deposit' && (
+                                        <div>
+                                            <div className="sticker p-6 md:p-7">
+                                                <div className="text-center">
+                                                    <div className="text-[15px] text-ink-soft">目前可以退回</div>
+                                                    <div className={`fun text-[54px] leading-none mt-1 tnum ${dep.remaining === DEPOSIT_TOTAL ? '' : dep.remaining === 0 ? 'text-bad' : 'text-warn'}`}>
+                                                        ${dep.remaining}
+                                                    </div>
+                                                    <div className="fun text-[15px] text-ink-muted mt-1 tnum">總額 ${DEPOSIT_TOTAL}</div>
+                                                </div>
+                                                <div className="mt-5"><Meter value={dep.remaining} max={DEPOSIT_TOTAL}
+                                                    color={dep.remaining === DEPOSIT_TOTAL ? undefined : dep.remaining === 0 ? '#d03b3b' : '#fab219'} /></div>
+                                                <div className="grid grid-cols-2 gap-3 mt-5">
+                                                    <div className="sticker-sm p-3 text-center" style={{ boxShadow: 'none', background: 'var(--paper)' }}>
+                                                        <div className="text-[14px] text-ink-soft">沒交作業</div>
+                                                        <div className="fun text-[19px] tnum mt-1">{dep.missedWork} 次 <span className="text-bad text-[15px]">−${dep.missedWork * PENALTY_WORK}</span></div>
+                                                    </div>
+                                                    <div className="sticker-sm p-3 text-center" style={{ boxShadow: 'none', background: 'var(--paper)' }}>
+                                                        <div className="text-[14px] text-ink-soft">沒完成回饋</div>
+                                                        <div className="fun text-[19px] tnum mt-1">{dep.missedFeedback} 次 <span className="text-bad text-[15px]">−${dep.missedFeedback * PENALTY_FEEDBACK}</span></div>
+                                                    </div>
+                                                </div>
+                                                <p className="text-[14px] text-ink-soft mt-4 text-center">只計算已經過期限的週次，還沒到期的不會扣。</p>
+                                            </div>
+
+                                            {dep.kicked && (
+                                                <div className="sticker p-5 mt-6" style={{ background: '#FFECEC' }}>
+                                                    <div className="text-[16px] font-bold text-bad flex items-center gap-2"><Ico name="alert" size={18} />已超過 {KICK_THRESHOLD} 次未完成</div>
+                                                    <p className="text-[15px] mt-1">依規則保證金不退回，並退出群組。</p>
+                                                </div>
+                                            )}
+
+                                            <div className="space-y-3 mt-6">
+                                                {dep.rows.map((r, i) => (
+                                                    <div key={r.date} className={`sticker-sm p-4 flex items-center gap-4 flex-wrap ${i % 2 ? '' : ''}`}>
+                                                        <span className="fun text-[16px] w-10 shrink-0">W{r.week}</span>
+                                                        <span className="fun text-[16px] tnum w-16 shrink-0">{r.date}</span>
+                                                        <span className="text-[15px] flex-1 min-w-[110px] flex items-center gap-1.5">
+                                                            <Ico name="upload" size={15} className="text-ink-muted" />
+                                                            <Ico name={STATE[r.work].icon} size={16} className={STATE[r.work].color} />
+                                                            <span className="text-ink-soft">{STATE[r.work].label}</span>
+                                                        </span>
+                                                        <span className="text-[15px] flex-1 min-w-[140px] flex items-center gap-1.5">
+                                                            <Ico name="chat" size={15} className="text-ink-muted" />
+                                                            <Ico name={STATE[r.fb].icon} size={16} className={STATE[r.fb].color} />
+                                                            <span className="text-ink-soft">{STATE[r.fb].label}</span>
+                                                            {r.stats.denominator > 0 && <span className="fun text-[14px] text-ink-muted tnum">{r.stats.numerator}/{r.stats.denominator}</span>}
+                                                        </span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* --- 全班進度 --- */}
+                                    {statusTab === 'board' && (
+                                        <div>
+                                            <div className="flex flex-wrap gap-x-4 gap-y-2 mb-5 text-[14px] text-ink-soft">
+                                                {['ok', 'miss', 'pending', 'na'].map(k => (
+                                                    <span key={k} className="flex items-center gap-1.5">
+                                                        <Ico name={STATE[k].icon} size={15} className={STATE[k].color} />{STATE[k].label}
+                                                    </span>
+                                                ))}
+                                                <span className="text-ink-muted flex items-center gap-1.5">
+                                                    上排 <Ico name="upload" size={14} /> 作業／下排 <Ico name="chat" size={14} /> 回饋
+                                                </span>
+                                            </div>
+
+                                            <div className="sticker p-4 overflow-x-auto">
+                                                <table className="min-w-[640px] w-full border-collapse">
+                                                    <thead>
+                                                        <tr>
+                                                            <th className="text-left py-2 pr-3 text-[14px] text-ink-soft sticky left-0 bg-surface">學員</th>
+                                                            {CAMP_WEEKS.map((w, i) => (
+                                                                <th key={w.date} className="py-2 px-1 text-center">
+                                                                    <div className="fun text-[14px]">W{i + 1}</div>
+                                                                    <div className="fun text-[12px] text-ink-muted tnum">{w.date}</div>
+                                                                </th>
+                                                            ))}
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {rosterNames.map(name => {
+                                                            const d = getDepositStatus(name);
+                                                            return (
+                                                                <tr key={name} style={{ borderTop: '2px dashed rgba(0,0,0,.12)' }}>
+                                                                    <td className="py-3 pr-3 sticky left-0 bg-surface whitespace-nowrap">
+                                                                        <span className="text-[15px] flex items-center gap-2">
+                                                                            <i className="w-3 h-3 rounded-full inline-block shrink-0" style={{ background: colorOf(name) }}></i>
+                                                                            {name}{name === identity.name && <span className="text-[13px] text-accent-deep">（你）</span>}
+                                                                        </span>
+                                                                    </td>
+                                                                    {d.rows.map(r => (
+                                                                        <td key={r.date} className="py-3 px-1 text-center leading-tight">
+                                                                            <div><Ico name={STATE[r.work].icon} size={16} className={STATE[r.work].color} /></div>
+                                                                            <div className="mt-0.5"><Ico name={STATE[r.fb].icon} size={16} className={STATE[r.fb].color} /></div>
+                                                                        </td>
+                                                                    ))}
+                                                                </tr>
+                                                            );
+                                                        })}
+                                                        {rosterNames.length === 0 && (
+                                                            <tr><td colSpan={CAMP_WEEKS.length + 1} className="py-12 text-center text-[15px] text-ink-muted">還沒有學員名單</td></tr>
+                                                        )}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* --- 規則 --- */}
+                                    {statusTab === 'rules' && (
+                                        <div className="space-y-5">
+                                            {[
+                                                { icon: 'clock',  label: '營期期間', text: CAMP_PERIOD },
+                                                { icon: 'pen',    label: '產出項目', text: RULES.output },
+                                                { icon: 'upload', label: '繳交時間', text: RULES.submit + '：' + CAMP_WEEKS.map(w => w.date).join('、') },
+                                                { icon: 'chat',   label: '回饋期間', text: RULES.feedback }
+                                            ].map((item, i) => (
+                                                <div key={item.label} className={`sticker p-5 ${i % 2 ? '' : ''}`}>
+                                                    <div className="text-[16px] font-bold mb-2 flex items-center gap-2"><Ico name={item.icon} size={18} className="text-accent" /><span className="marker">{item.label}</span></div>
+                                                    <p className="text-[16px] leading-relaxed">{item.text}</p>
+                                                </div>
+                                            ))}
+
+                                            <div className="sticker p-6">
+                                                <div className="text-[18px] font-bold mb-2 flex items-center gap-2"><Ico name="coin" size={20} className="text-accent" /><span className="marker">保證金機制</span></div>
+                                                <p className="text-[15px] text-ink-soft leading-relaxed mb-5">
+                                                    為了讓大家都能順利輸出內容、真的有所行動，所以設定了保證金機制，請務必詳細閱讀。
+                                                </p>
+                                                <div className="space-y-3">
+                                                    {RULES.penalties.map((r, i) => (
+                                                        <div key={i} className="sticker-sm p-4 flex gap-3 items-start"
+                                                            style={{ boxShadow: 'none', background: r.type === 'ok' ? '#EAF7EA' : r.type === 'kick' ? '#FFECEC' : 'var(--paper)' }}>
+                                                            <Ico name={r.type === 'ok' ? 'check' : 'x'} size={18} className={`mt-1 ${r.type === 'ok' ? 'text-ok' : 'text-bad'}`} />
+                                                            <p className="text-[16px] leading-relaxed">{r.text}</p>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    </main>
+
+                    {/* 手機底部分頁列 */}
+                    <nav className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-paper"
+                        style={{ borderTop: '2.5px solid var(--ink)' }}>
+                        <div className="grid grid-cols-5">
+                            {NAV.map(n => (
+                                <button key={n.key} onClick={() => setView(n.key)}
+                                    className="py-2.5 flex flex-col items-center gap-0.5">
+                                    <Ico name={n.icon} size={21} className={view === n.key ? 'text-accent' : 'text-ink-muted'} />
+                                    <span className={`text-[11px] ${view === n.key ? 'text-accent' : 'text-ink-muted'}`}>{n.label}</span>
+                                </button>
+                            ))}
+                        </div>
+                    </nav>
+
+                    {/* 提示 */}
+                    {toast && (
+                        <div className="fixed left-1/2 -translate-x-1/2 bottom-24 lg:bottom-10 z-50 pop-in sticker px-6 py-3 text-[16px] bg-accent text-white">
+                            {toast}
+                        </div>
+                    )}
+
+                    {/* 彩帶 */}
+                    {confetti.length > 0 && (
+                        <div className="confetti-layer">
+                            {confetti.map(p => (
+                                <span key={p.id} className="confetti-piece"
+                                    style={{
+                                        left: p.left + '%', width: p.w, height: p.h,
+                                        background: p.color,
+                                        borderRadius: p.round ? '50%' : '2px',
+                                        animationDuration: p.dur + 's',
+                                        animationDelay: p.delay + 's'
+                                    }}></span>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    </script>
+</body>
+</html>

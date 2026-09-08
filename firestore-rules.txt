@@ -1,0 +1,39 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ───── 這一期的 SEO/社群共學營 ─────
+    // 作業與回饋：大家都看得到、都能新增，但只能刪自己送出的
+    match /artifacts/seo-camp-portal-v1/public/data/{collection}/{docId} {
+
+      allow read: if request.auth != null;
+
+      // 新增時一定要帶上自己的身分，不能冒充別人
+      allow create: if request.auth != null
+                    && request.resource.data.uid is string
+                    && request.resource.data.uid == request.auth.uid;
+
+      // 只能刪自己送出的
+      allow delete: if request.auth != null
+                    && resource.data.uid == request.auth.uid;
+
+      // 只開放按讚，內容送出後誰都不能竄改
+      allow update: if request.auth != null
+                    && request.resource.data
+                         .diff(resource.data)
+                         .affectedKeys()
+                         .hasOnly(['likedBy']);
+    }
+
+    // 公告：大家讀得到，只能從 Firebase 後台改
+    match /artifacts/seo-camp-portal-v1/public/{docId} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+
+    // ───── 上一期的班級系統，維持原本的開放設定 ─────
+    match /artifacts/class-assignment-portal-v2/{document=**} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}
