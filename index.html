@@ -168,13 +168,13 @@
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
         const firebaseConfig = {
-            apiKey: "AIzaSyBlo6fIFqmEMyK3YTGBRg1S9Lw3OcZdczU",
-            authDomain: "test-fee8d.firebaseapp.com",
-            projectId: "test-fee8d",
-            storageBucket: "test-fee8d.firebasestorage.app",
-            messagingSenderId: "415299571304",
-            appId: "1:415299571304:web:07dff250c930d4f99035dd",
-            measurementId: "G-TXQ7NZ8LPT"
+            apiKey: "AIzaSyDXoXTpc0o_lAjdVfHOETSXSbWADsGqnwo",
+            authDomain: "seo-camp-4609d.firebaseapp.com",
+            projectId: "seo-camp-4609d",
+            storageBucket: "seo-camp-4609d.firebasestorage.app",
+            messagingSenderId: "666725089437",
+            appId: "1:666725089437:web:e3249b36a39405e0165474",
+            measurementId: "G-3PJZ54G1FT"
         };
 
         const app = initializeApp(firebaseConfig);
@@ -183,7 +183,7 @@
             db: getFirestore(app),
             collection, doc, onSnapshot, addDoc, updateDoc, deleteDoc, serverTimestamp, arrayUnion, arrayRemove,
             signInAnonymously, onAuthStateChanged,
-            // 這一期的資料存放區。跟上一期完全分開。
+            // 這一期的資料存放區。
             // 之後要再開新一期，把 v1 改成 v2 就好，資料會重新開始。
             appId: 'seo-camp-portal-v1'
         };

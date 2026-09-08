@@ -1,0 +1,9 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 【暫時的】只在初始設定期間使用，名單寫好後請換成 firestore-rules.txt
+    match /{document=**} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}

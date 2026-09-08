@@ -5,7 +5,8 @@
 ## 檔案
 
 - `index.html` — 整個系統就這一個檔案，不需要編譯或安裝
-- `firestore-rules.txt` — Firebase 資料庫的安全規則，要貼到 Firebase Console
+- `firestore-rules.txt` — 正式的資料庫安全規則，要貼到 Firebase Console
+- `firestore-rules-setup.txt` — 初始設定用的暫時規則（平常用不到）
 
 ## 要改東西的話
 
@@ -35,7 +36,7 @@ artifacts / seo-camp-portal-v1 / public / data / config / roster
 
 ## 資料存在哪
 
-Firebase Firestore，專案 `test-fee8d`，資料區 `seo-camp-portal-v1`。
+Firebase Firestore，專案 `seo-camp-4609d`，資料區 `seo-camp-portal-v1`。
 換網址、換主機都不影響資料——網站只是外殼。
 
 ## 權限
